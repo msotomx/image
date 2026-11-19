@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>IMAGE ENGINE | Revisión de entregas</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background: #f5f6f8;
+            color: #212529;
+        }
+
+        .contenedor {
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background: #e9ecef;
+        }
+
+        .alerta {
+            background: #fff3cd;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .motivo-tiempo {
+            color: #9a6700;
+            font-weight: bold;
+        }
+
+        .motivo-sin-fecha {
+            color: #b42318;
+            font-weight: bold;
+        }
+        .resumen {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .resumen-item {
+            flex: 1;
+            min-width: 180px;
+            padding: 18px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+
+        .resumen-item strong {
+            display: block;
+            font-size: 28px;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+
+<body>
+<div class="contenedor">
+
+    <h2>IMAGE ENGINE — Revisión de entregas</h2>
+    <div class="resumen">
+        <div class="resumen-item">
+            Total pendientes
+            <strong>{{ resumen.total }}</strong>
+        </div>
+
+        <div class="resumen-item">
+            Tiempo excedido
+            <strong>{{ resumen.tiempo_excedido }}</strong>
+        </div>
+
+        <div class="resumen-item">
+            Sin fecha de inicio
+            <strong>{{ resumen.sin_fecha_inicio }}</strong>
+        </div>
+    </div>
+
+    <div class="alerta">
+        Los siguientes envíos requieren revisión administrativa.
+        No se realizan reenvíos automáticos.
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Operación</th>
+                <th>Canal</th>
+                <th>Destinatario</th>
+                <th>Estado</th>
+                <th>Fecha de creación</th>
+                <th>Inicio del envío</th>
+                <th>Motivo</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+
+        <tbody>
+        {% for entrega in entregas %}
+            <tr>
+                <td>{{ entrega.codigo_proceso }}</td>
+                <td>{{ entrega.canal }}</td>
+                <td>{{ entrega.destinatario }}</td>
+                <td>{{ entrega.estado }}</td>
+                <td>{{ entrega.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                <td>
+                    {% if entrega.fecha_inicio_envio %}
+                        {{ entrega.fecha_inicio_envio|date:"d/m/Y H:i" }}
+                    {% else %}
+                        Sin registro
+                    {% endif %}
+                </td>
+                <td>
+                    {% if entrega.motivo_revision == "TIEMPO_EXCEDIDO" %}
+                        <span class="motivo-tiempo">
+                            Tiempo excedido
+                        </span>
+                    {% elif entrega.motivo_revision == "SIN_FECHA_INICIO" %}
+                        <span class="motivo-sin-fecha">
+                            Sin fecha de inicio
+                        </span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'web:detalle_intento_entrega' entrega.id %}">
+                        Ver detalle
+                    </a>
+                </td>                
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="7">
+                    No existen entregas pendientes de revisión.
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+</body>
+</html>

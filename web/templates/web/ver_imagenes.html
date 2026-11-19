@@ -1,0 +1,455 @@
+
+{% extends "web/base.html" %}
+
+{% block title %}Imágenes procesadas | IMAGE ENGINE{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3>Imágenes de la operación</h3>
+            <p class="text-muted mb-0">
+                Operación: {{ codigo_proceso }}
+            </p>
+        </div>
+
+        <a href="{% url 'web:historial_operaciones' %}"
+           class="btn btn-outline-secondary">
+            Volver al historial
+        </a>
+    </div>
+
+    {% if operacion_esperando or operacion_procesando %}
+
+        <div class="card shadow-sm">
+            <div class="card-body text-center py-5">
+
+                <div class="spinner-border text-primary mb-4"
+                     role="status">
+                    <span class="visually-hidden">
+                        Procesando...
+                    </span>
+                </div>
+
+                {% if operacion_esperando %}
+                    <h4>Fotografía recibida</h4>
+                    <p class="text-muted">
+                        Tu fotografía está esperando procesamiento.
+                    </p>
+                {% else %}
+                    <h4>Procesando fotografía</h4>
+                    <p class="text-muted">
+                        Estamos generando las imágenes
+                        con diferentes fondos.
+                    </p>
+                {% endif %}
+
+                <p class="small text-muted">
+                    Esta página se actualizará automáticamente
+                    cuando las imágenes estén listas.
+                </p>
+
+            </div>
+        </div>
+
+        <script>
+            setTimeout(function () {
+                window.location.reload();
+            }, 10000);
+        </script>
+
+    {% elif imagenes %}
+
+        <div class="alert alert-info">
+            Se generaron {{ imagenes|length }} imágenes
+            con diferentes fondos.
+        </div>
+
+        {% if not operacion_cerrada %}
+            <form method="post">
+                {% csrf_token %}
+        {% endif %}
+
+        <div class="d-flex align-items-center justify-content-center gap-3 mb-3">
+
+            {% if operacion_anterior %}
+                <a href="{% url 'web:ver_imagenes' operacion_anterior %}"
+                class="btn btn-outline-primary rounded-circle carrusel-flecha"
+                aria-label="Operación anterior">
+                    &larr;
+                </a>
+            {% else %}
+                <button class="btn btn-outline-secondary rounded-circle carrusel-flecha"
+                        disabled>
+                    &larr;
+                </button>
+            {% endif %}
+
+            <div class="text-center">
+                <span class="fw-semibold">
+                    Operación {{ numero_operacion }} de {{ total_operaciones }}
+                </span>
+                <div class="small text-muted">
+                    {{ imagenes|length }} fotografías
+                </div>
+            </div>
+
+            {% if operacion_siguiente %}
+                <a href="{% url 'web:ver_imagenes' operacion_siguiente %}"
+                class="btn btn-outline-primary rounded-circle carrusel-flecha"
+                aria-label="Siguiente operación">
+                    &rarr;
+                </a>
+            {% else %}
+                <button class="btn btn-outline-secondary rounded-circle carrusel-flecha"
+                        disabled>
+                    &rarr;
+                </button>
+            {% endif %}
+
+        </div>
+
+        <div class="row g-4">
+
+            {% for imagen in imagenes %}
+
+                <div class="col-md-6 col-lg-4">
+
+                    <div class="card h-100 shadow-sm imagen-card"
+                        {% if not operacion_cerrada %}
+                        data-checkbox="imagen_{{ imagen.id }}"
+                        role="button"
+                        tabindex="0"
+                        aria-pressed="false"
+                        {% endif %}>
+
+                        <img
+                            src="{{ imagen.imagen_procesada.url }}"
+                            class="card-img-top"
+                            alt="Imagen {{ imagen.codigo_imagen }}"
+                            style="height: 300px; object-fit: contain;"
+                        >
+
+                        <div class="card-body">
+
+                            <h6 class="card-title">
+                                Imagen {{ forloop.counter }}
+                            </h6>
+
+                            <p class="text-muted small">
+                                Fondo: {{ imagen.fondo.codigo_fondo }}
+                            </p>
+
+                            {% if operacion_cerrada %}
+
+                                {% if imagen.seleccionada %}
+                                    <span class="badge bg-success mb-3">
+                                        Imagen seleccionada
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary mb-3">
+                                        No seleccionada
+                                    </span>
+                                {% endif %}
+
+                            {% else %}
+
+                                <input
+                                    type="checkbox"
+                                    name="imagenes_ids"
+                                    value="{{ imagen.id }}"
+                                    id="imagen_{{ imagen.id }}"
+                                    class="imagen-checkbox visually-hidden"
+                                >
+
+                                <p class="text-muted small mb-2 seleccion-indicador">
+                                    Haz clic en la fotografía para seleccionarla
+                                </p>
+
+                            {% endif %}
+
+                            <a
+                                href="{{ imagen.imagen_procesada.url }}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="btn btn-outline-primary btn-sm"
+                            >
+                                Ver imagen completa
+                            </a>
+
+                        </div>
+                    </div>
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% if not operacion_cerrada %}
+
+            <div class="mt-4 border-top pt-4">
+
+                <p class="text-muted">
+                    Selecciona entre 1 y 6 imágenes.
+                    Se consume 1 crédito por cada grupo
+                    de hasta 3 imágenes.
+                </p>
+
+                <button type="submit" class="btn btn-primary">
+                    Confirmar imágenes seleccionadas
+                </button>
+
+            </div>
+
+            </form>
+
+        {% else %}
+
+            <div class="alert alert-success mt-4">
+                Esta operación está cerrada.
+                Las imágenes seleccionadas quedaron registradas
+                y los créditos correspondientes fueron consumidos.
+            </div>
+
+            <div class="card shadow-sm mt-4">
+                <div class="card-body">
+
+                    <h5 class="card-title">
+                        Enviar fotografías por correo
+                    </h5>
+
+                    <p class="text-muted">
+                        Envía o reenvía las fotografías seleccionadas
+                        al correo registrado para esta operación.
+                        No se consumirán créditos adicionales.
+                    </p>
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <input
+                            type="hidden"
+                            name="accion"
+                            value="enviar_email"
+                        >
+                        <input
+                            type="hidden"
+                            name="clave_solicitud"
+                            value="{{ clave_solicitud_email }}"
+                        >
+                        <button
+                            type="submit"
+                            class="btn btn-success"
+                        >
+                            Enviar fotografías por email
+                        </button>
+
+                    </form>
+
+                </div>
+            </div>
+
+            <div class="card shadow-sm mt-4">
+                <div class="card-body">
+
+                    <h5 class="card-title">
+                        WhatsApp del cliente
+                    </h5>
+
+                    <p class="text-muted">
+                        Después de seleccionar las fotografías,
+                        registra el número de WhatsApp del cliente
+                        que las recibirá.
+                    </p>
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <input
+                            type="hidden"
+                            name="accion"
+                            value="registrar_whatsapp_cliente"
+                        >
+
+                        <div class="mb-3">
+                            <label
+                                for="whatsapp_cliente"
+                                class="form-label"
+                            >
+                                Número de WhatsApp del cliente
+                            </label>
+
+                            <input
+                                type="tel"
+                                class="form-control"
+                                id="whatsapp_cliente"
+                                name="whatsapp_cliente"
+                                placeholder="656 123 4567"
+                                autocomplete="tel"
+                                inputmode="tel"
+                                maxlength="25"
+                                required
+                            >
+
+                            <div class="form-text">
+                                Ingresa un número mexicano de 10 dígitos.
+                                Las fotografías se enviarán exclusivamente
+                                a este número.
+                            </div>
+                        </div>
+
+                        <button
+                            type="submit"
+                            class="btn btn-success"
+                        >
+                            Registrar WhatsApp del cliente
+                        </button>
+
+                    </form>
+
+                </div>
+            </div>            
+
+            {% if qr_whatsapp %}
+                <div class="card shadow-sm mt-4">
+                    <div class="card-body text-center">
+
+                        <h5 class="card-title">
+                            Recibir fotografías por WhatsApp
+                        </h5>
+
+                        <p class="text-muted">
+                            Solicita al cliente escanear este código QR
+                            con su teléfono y enviar el mensaje
+                            que aparecerá en WhatsApp.
+                        </p>
+
+                        <img
+                            src="data:image/png;base64,{{ qr_whatsapp }}"
+                            alt="Código QR para recibir fotografías por WhatsApp"
+                            class="img-fluid"
+                            style="max-width: 280px;"
+                        >
+
+                        <p class="small text-muted mt-3 mb-0">
+                            El código tiene una vigencia de 15 minutos.
+                        </p>
+
+                    </div>
+                </div>
+            {% endif %}
+            
+        {% endif %}
+
+    {% else %}
+
+        <div class="alert alert-warning">
+            No hay imágenes procesadas disponibles
+            para esta operación.
+        </div>
+
+    {% endif %}
+
+</div>
+
+<style>
+    .imagen-card[data-checkbox] {
+        cursor: pointer;
+        transition: background-color 0.2s ease,
+                    border-color 0.2s ease,
+                    box-shadow 0.2s ease;
+        border: 3px solid transparent;
+    }
+
+    .imagen-card[data-checkbox]:hover {
+        border-color: #b6d4fe;
+    }
+
+    .imagen-card.seleccionada {
+        background-color: #d1e7dd;
+        border-color: #198754;
+        box-shadow: 0 0 0 2px rgba(25, 135, 84, 0.15);
+    }
+
+    .imagen-card.seleccionada .seleccion-indicador {
+        color: #146c43 !important;
+        font-weight: 600;
+    }
+
+    .imagen-card[data-checkbox]:focus-visible {
+        outline: 3px solid #0d6efd;
+        outline-offset: 3px;
+    }
+    .carrusel-flecha {
+        width: 46px;
+        height: 46px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: bold;
+        flex-shrink: 0;
+    }
+
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    document.querySelectorAll(".imagen-card[data-checkbox]")
+        .forEach(function (card) {
+
+            const checkbox = document.getElementById(
+                card.dataset.checkbox
+            );
+
+            const indicador = card.querySelector(
+                ".seleccion-indicador"
+            );
+
+            function actualizarSeleccion() {
+                card.classList.toggle(
+                    "seleccionada",
+                    checkbox.checked
+                );
+
+                card.setAttribute(
+                    "aria-pressed",
+                    String(checkbox.checked)
+                );
+
+                indicador.textContent = checkbox.checked
+                    ? "✓ Imagen seleccionada"
+                    : "Haz clic en la fotografía para seleccionarla";
+            }
+
+            card.addEventListener("click", function (event) {
+
+                if (event.target.closest("a, button")) {
+                    return;
+                }
+
+                checkbox.checked = !checkbox.checked;
+                actualizarSeleccion();
+            });
+
+            card.addEventListener("keydown", function (event) {
+
+                if (event.target !== card) {
+                    return;
+                }
+
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    checkbox.checked = !checkbox.checked;
+                    actualizarSeleccion();
+                }
+            });
+
+        });
+
+});
+</script>
+
+{% endblock %}

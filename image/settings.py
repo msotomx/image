@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,8 +26,14 @@ SECRET_KEY = 'django-insecure-7d01d1%9qk^*vbqc^l04u@jdo+(hhrmp(q*g!on_%)v&w48o)n
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = [
+    "127.0.0.1",
+    "localhost",
+    "breana-ommatophorous-gigi.ngrok-free.dev",
+]
+CSRF_TRUSTED_ORIGINS = [
+    "https://breana-ommatophorous-gigi.ngrok-free.dev",
+]
 
 # Application definition
 
@@ -121,8 +128,67 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'static/'
+# Almacenamiento de imágenes de IMAGE ENGINE
+
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Autenticación IMAGE ENGINE
+LOGIN_URL = "web:login"
+LOGIN_REDIRECT_URL = "web:inicio"
+LOGOUT_REDIRECT_URL = "web:login"
+# Tiempo de conservación de fotografías después del procesamiento
+HORAS_CONSERVACION_IMAGENES = 12
+
+# ==========================================
+# CONFIGURACIÓN DE CORREO ELECTRÓNICO
+# ==========================================
+
+# Desarrollo: muestra los correos en la consola.
+# No envía mensajes reales.
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+DEFAULT_FROM_EMAIL = "IMAGE ENGINE <noreply@imageengine.local>"
+IMAGE_ENGINE_WHATSAPP_NUMBER = config(
+    "IMAGE_ENGINE_WHATSAPP_NUMBER",
+    default="",
+)
+IMAGE_ENGINE_WHATSAPP_VERIFY_TOKEN = config(
+    "IMAGE_ENGINE_WHATSAPP_VERIFY_TOKEN",
+    default="",
+)
+IMAGE_ENGINE_META_APP_SECRET = config(
+    "IMAGE_ENGINE_META_APP_SECRET",
+    default="",
+)
+# Meta WhatsApp Cloud API
+WHATSAPP_ACCESS_TOKEN = config(
+    "WHATSAPP_ACCESS_TOKEN",
+    default="",
+)
+WHATSAPP_PHONE_NUMBER_ID = config(
+    "WHATSAPP_PHONE_NUMBER_ID",
+    default="",
+)
+# Seguridad: deshabilitado hasta autorizar envíos reales.
+WHATSAPP_ENVIO_HABILITADO = config(
+    "WHATSAPP_ENVIO_HABILITADO",
+    default=False,
+    cast=bool,
+)
+# IDs de eventos WhatsApp protegidos contra modificaciones.
+# Desarrollo: WHATSAPP_EVENTOS_PROTEGIDOS=4
+# Producción: WHATSAPP_EVENTOS_PROTEGIDOS=
+WHATSAPP_EVENTOS_PROTEGIDOS = tuple(
+    int(valor.strip())
+    for valor in config(
+        "WHATSAPP_EVENTOS_PROTEGIDOS",
+        default="",
+    ).split(",")
+    if valor.strip()
+)

@@ -1,0 +1,127 @@
+{% extends "web/base.html" %}
+
+{% block title %}Inicio | IMAGE ENGINE{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <h3 class="mb-4">Bienvenido a IMAGE ENGINE</h3>
+
+    {% if unidad_venta %}
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                Unidad de Venta
+            </div>
+
+            <div class="card-body">
+                <h5>{{ unidad_venta.nombre }}</h5>
+
+                <p class="mb-1">
+                    <strong>Sector:</strong>
+                    {{ unidad_venta.sector.nombre }}
+                </p>
+
+                <p class="mb-0">
+                    <strong>Código del Sector:</strong>
+                    {{ unidad_venta.sector.codigo_sector }}
+                </p>
+
+                {% if creditos_disponibles is not None %}
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+
+                        <h5 class="card-title">
+                            Saldo de créditos
+                        </h5>
+
+                        <div class="d-flex align-items-center gap-3">
+
+                            <div>
+                                <span class="display-5 fw-bold text-primary">
+                                    {{ creditos_disponibles }}
+                                </span>
+                            </div>
+
+                            <div class="text-muted">
+                                Créditos disponibles
+                                <div class="small">
+                                    Saldo compartido por las Unidades de Venta
+                                    del Sector.
+                                </div>
+                            </div>
+
+                        </div>
+
+                        {% if creditos_disponibles == 0 %}
+                            <div class="alert alert-warning mt-3 mb-0">
+                                No hay créditos disponibles para procesar fotografías.
+                            </div>
+                        {% elif creditos_disponibles == 1 %}
+                            <div class="alert alert-info mt-3 mb-0">
+                                Puedes enviar una fotografía y generar 3 imágenes.
+                            </div>
+                        {% else %}
+                            <div class="alert alert-success mt-3 mb-0">
+                                Puedes enviar una fotografía y generar 6 imágenes.
+                            </div>
+                        {% endif %}
+
+                    </div>
+                </div>
+
+                {% endif %}
+                
+                <div class="mt-4">
+                    <a href="{% url 'web:recibir_fotografia' %}"
+                    class="btn btn-primary">
+                        Enviar fotografía
+                    </a>
+                    <a href="{% url 'web:historial_operaciones' %}"
+                    class="btn btn-outline-primary">
+                        Historial de operaciones
+                    </a>
+
+                </div>
+
+
+            </div>
+        </div>
+
+    {% elif sector %}
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white">
+                Sector
+            </div>
+
+            <div class="card-body">
+                <h5>{{ sector.nombre }}</h5>
+
+                <p class="mb-0">
+                    <strong>Código:</strong>
+                    {{ sector.codigo_sector }}
+                </p>
+            </div>
+        </div>
+
+    {% elif user.is_staff %}
+
+        <div class="alert alert-info">
+            Acceso de administrador de IMAGE ENGINE.
+        </div>
+
+    {% else %}
+
+        <div class="alert alert-warning">
+            Tu usuario no tiene asignado un Sector
+            ni una Unidad de Venta.
+        </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

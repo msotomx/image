@@ -1,3 +1,7 @@
 django==5.2
-Pillow
 mysqlclient
+python-decouple==3.8
+rembg[cpu]
+Pillow
+celery[redis]==5.6.3
+qrcode[pil]==8.2

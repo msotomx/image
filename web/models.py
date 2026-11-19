@@ -52,6 +52,14 @@ class Sector(models.Model):
 
 class UnidadVenta(models.Model):
     sector = models.ForeignKey(Sector, on_delete=models.PROTECT, related_name='unidades_venta')
+    usuario = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="unidad_venta",
+        verbose_name="Usuario de la Unidad de Venta",
+    )
     nombre = models.CharField(max_length=160)
     whatsapp = models.CharField(max_length=25)
     comentarios = models.TextField(blank=True)
@@ -118,7 +126,11 @@ class Pago(models.Model):
     def __str__(self):
         return self.codigo_pago
 
-
+# Fechas en PaqueteImagen
+# fecha_creacion        Se crea el proceso
+# fecha_cierre          El cliente selecciona las imagenes y se le envian 
+# fecha_inicio_proceso	Cuando el paquete cambie a PROCESANDO.
+# fecha_fin_proceso	    Cuando termine exitosamente la generación de imágenes y cambie a LISTO.
 class PaqueteImagen(models.Model):
 
     class EstadoPaquete(models.TextChoices):
@@ -154,9 +166,9 @@ class PaqueteImagen(models.Model):
         db_index=True
     ) # liga los 2 paquetes especialmente util cuando el Pago viene de diferentes Pagos
     imagen_original = models.ImageField(
-        upload_to="imagenes/originales/%Y/%m/"
+        upload_to="imagenes/originales/%Y/%m/",
+        blank=True,
     )
-
     fecha_creacion = models.DateTimeField(
         default=timezone.now
     )
@@ -185,6 +197,19 @@ class PaqueteImagen(models.Model):
         blank=True
     )
 
+    fecha_inicio_proceso = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name="Fecha de inicio de procesamiento",
+    )
+
+    fecha_fin_proceso = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de fin de procesamiento",
+    )
+
     class Meta:
         constraints = [
             models.UniqueConstraint(
@@ -205,7 +230,15 @@ class Fondo(models.Model):
         max_length=30,
         unique=True
     )
-    imagen = models.ImageField(upload_to='fondos/%Y/%m/')
+    imagen = models.ImageField(
+        upload_to="fondos/%Y/%m/"
+    )
+    activo = models.BooleanField(
+        default=True,
+        db_index=True,
+        verbose_name="Activo",
+    )
+
 
     def __str__(self):
         return self.codigo_fondo
@@ -226,7 +259,7 @@ class Imagen(models.Model):
     )
 
     codigo_imagen = models.CharField(
-        max_length=25,
+        max_length=50,
         unique=True
     )
 
@@ -267,4 +300,286 @@ class Imagen(models.Model):
 
     def __str__(self):
         return self.codigo_imagen
-    
+
+
+class IntentoEntrega(models.Model):
+
+    class Canal(models.TextChoices):
+        EMAIL = "EMAIL", "Correo electrónico"
+        WHATSAPP = "WHATSAPP", "WhatsApp"
+
+    class Estado(models.TextChoices):
+        PENDIENTE = "PENDIENTE", "Pendiente"
+        ENVIANDO = "ENVIANDO", "Enviando"
+        ENVIADO = "ENVIADO", "Enviado"
+        ERROR = "ERROR", "Error"
+
+    class ResultadoRevision(models.TextChoices):
+        CONFIRMADA = "CONFIRMADA", "Entrega confirmada"
+        NO_REALIZADA = "NO_REALIZADA", "Entrega no realizada"
+        INCIERTA = "INCIERTA", "Resultado incierto"
+
+    revisado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="intentos_entrega_revisados",
+    )
+
+    fecha_revision = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    resultado_revision = models.CharField(
+        max_length=20,
+        choices=ResultadoRevision.choices,
+        blank=True,
+        default="",
+    )
+
+    observaciones_revision = models.TextField(
+        blank=True,
+        default="",
+    )
+
+    codigo_proceso = models.CharField(
+        max_length=40,
+        db_index=True,
+    )
+
+    canal = models.CharField(
+        max_length=10,
+        choices=Canal.choices,
+    )
+
+    destinatario = models.CharField(
+        max_length=254,
+    )
+
+    estado = models.CharField(
+        max_length=12,
+        choices=Estado.choices,
+        default=Estado.PENDIENTE,
+    )
+
+    clave_idempotencia = models.CharField(
+        max_length=100,
+        unique=True,
+    )
+
+    fecha_creacion = models.DateTimeField(
+        default=timezone.now,
+    )
+
+    fecha_envio = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    fecha_autorizacion = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    fecha_inicio_envio = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    mensaje_error = models.TextField(
+        blank=True,
+    )
+
+    autorizado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="intentos_entrega_autorizados",
+    )
+
+    motivo_autorizacion = models.TextField(
+        blank=True,
+    )
+
+    def __str__(self):
+        return (
+            f"{self.codigo_proceso} - "
+            f"{self.canal} - {self.estado}"
+        )
+
+class EventoWhatsApp(models.Model):
+
+    class Tipo(models.TextChoices):
+        MENSAJE = "MENSAJE", "Mensaje entrante"
+        ESTADO = "ESTADO", "Estado de mensaje"
+
+    class EstadoProcesamiento(models.TextChoices):
+        PENDIENTE = "PENDIENTE", "Pendiente"
+        PROCESANDO = "PROCESANDO", "Procesando"
+        PROCESADO = "PROCESADO", "Procesado"
+        ERROR = "ERROR", "Error"
+
+    clave_evento = models.CharField(
+        max_length=64,
+        unique=True,
+    )
+
+    tipo = models.CharField(
+        max_length=10,
+        choices=Tipo.choices,
+    )
+
+    mensaje_id = models.CharField(
+        max_length=255,
+        db_index=True,
+    )
+
+    telefono = models.CharField(
+        max_length=30,
+        blank=True,
+        default="",
+    )
+
+    estado_mensaje = models.CharField(
+        max_length=30,
+        blank=True,
+        default="",
+    )
+
+    contenido = models.JSONField()
+
+    estado_procesamiento = models.CharField(
+        max_length=12,
+        choices=EstadoProcesamiento.choices,
+        default=EstadoProcesamiento.PENDIENTE,
+        db_index=True,
+    )
+
+    fecha_recepcion = models.DateTimeField(
+        default=timezone.now,
+    )
+
+    fecha_procesamiento = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    mensaje_error = models.TextField(
+        blank=True,
+        default="",
+    )
+
+    intentos_procesamiento = models.PositiveSmallIntegerField(
+        default=0,
+    )
+
+    fecha_proximo_intento = models.DateTimeField(
+        null=True,
+        blank=True,
+        default=None,
+    )
+
+    fecha_ultimo_intento = models.DateTimeField(
+        null=True,
+        blank=True,
+        default=None,
+    )
+
+    class Meta:
+        ordering = ["-fecha_recepcion"]
+        verbose_name = "Evento de WhatsApp"
+        verbose_name_plural = "Eventos de WhatsApp"
+
+    def __str__(self):
+        return (
+            f"{self.tipo} - "
+            f"{self.mensaje_id} - "
+            f"{self.estado_procesamiento}"
+        )
+
+class IntentoEntregaImagen(models.Model):
+
+    class Estado(models.TextChoices):
+        PENDIENTE = "PENDIENTE", "Pendiente"
+        ENVIANDO = "ENVIANDO", "Enviando"
+        ACEPTADA = "ACEPTADA", "Aceptada por Meta"
+        ENVIADA = "ENVIADA", "Enviada por Meta"
+        ENTREGADA = "ENTREGADA", "Entregada"
+        LEIDA = "LEIDA", "Leída"
+        ERROR = "ERROR", "Error"
+        INCIERTA = "INCIERTA", "Resultado incierto"
+
+    intento = models.ForeignKey(
+        IntentoEntrega,
+        on_delete=models.PROTECT,
+        related_name="imagenes_entrega",
+    )
+
+    imagen = models.ForeignKey(
+        Imagen,
+        on_delete=models.PROTECT,
+        related_name="intentos_entrega",
+    )
+
+    estado = models.CharField(
+        max_length=12,
+        choices=Estado.choices,
+        default=Estado.PENDIENTE,
+        db_index=True,
+    )
+
+    meta_message_id = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        default=None,
+        unique=True,
+    )
+
+    fecha_creacion = models.DateTimeField(
+        default=timezone.now,
+    )
+
+    fecha_inicio_envio = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    fecha_aceptacion = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    fecha_entrega = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    fecha_lectura = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    mensaje_error = models.TextField(
+        blank=True,
+        default="",
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["intento", "imagen"],
+                name="uq_intento_entrega_imagen",
+            ),
+        ]
+        ordering = ["pk"]
+
+    def __str__(self):
+        return (
+            f"{self.intento_id} - "
+            f"{self.imagen.codigo_imagen} - "
+            f"{self.estado}"
+        )

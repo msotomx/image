@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>IMAGE ENGINE | Detalle de entrega</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f6f8;
+            margin: 30px;
+            color: #212529;
+        }
+        .contenedor {
+            max-width: 900px;
+            margin: auto;
+        }
+        .detalle {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 24px;
+        }
+        dt {
+            font-weight: bold;
+            margin-top: 16px;
+        }
+        dd {
+            margin: 5px 0 0;
+            overflow-wrap: anywhere;
+        }
+        .aviso {
+            background: #fff3cd;
+            padding: 14px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="contenedor">
+
+    <h2>IMAGE ENGINE — Detalle de entrega</h2>
+
+    <div class="aviso">
+        Consulta administrativa de solo lectura.
+        No se realizan reenvíos automáticos.
+    </div>
+
+    <div class="detalle">
+        <dl>
+            <dt>ID del intento</dt>
+            <dd>{{ intento.pk }}</dd>
+
+            <dt>Código de operación</dt>
+            <dd>{{ intento.codigo_proceso }}</dd>
+
+            <dt>Canal</dt>
+            <dd>{{ intento.get_canal_display }}</dd>
+
+            <dt>Destinatario</dt>
+            <dd>{{ intento.destinatario }}</dd>
+
+            <dt>Estado</dt>
+            <dd>{{ intento.get_estado_display }}</dd>
+
+            <dt>Clave de idempotencia</dt>
+            <dd>{{ intento.clave_idempotencia }}</dd>
+
+            <dt>Fecha de creación</dt>
+            <dd>{{ intento.fecha_creacion|date:"d/m/Y H:i:s" }}</dd>
+
+            <dt>Inicio del envío</dt>
+            <dd>
+                {% if intento.fecha_inicio_envio %}
+                    {{ intento.fecha_inicio_envio|date:"d/m/Y H:i:s" }}
+                {% else %}
+                    Sin registro
+                {% endif %}
+            </dd>
+
+            <dt>Fecha de envío</dt>
+            <dd>
+                {% if intento.fecha_envio %}
+                    {{ intento.fecha_envio|date:"d/m/Y H:i:s" }}
+                {% else %}
+                    Sin confirmar
+                {% endif %}
+            </dd>
+
+            <dt>Mensaje de error</dt>
+            <dd>{{ intento.mensaje_error|default:"Sin errores registrados" }}</dd>
+
+            <dt>Autorizado por</dt>
+            <dd>
+                {% if intento.autorizado_por %}
+                    {{ intento.autorizado_por }}
+                {% else %}
+                    Sin autorización
+                {% endif %}
+            </dd>
+
+            <dt>Fecha de autorización</dt>
+            <dd>
+                {% if intento.fecha_autorizacion %}
+                    {{ intento.fecha_autorizacion|date:"d/m/Y H:i:s" }}
+                {% else %}
+                    Sin registro
+                {% endif %}
+            </dd>
+
+            <dt>Motivo de autorización</dt>
+            <dd>{{ intento.motivo_autorizacion|default:"Sin registro" }}</dd>
+            <dt>Resultado de revisión administrativa</dt>
+            <dd>
+                {% if intento.fecha_revision %}
+                    {{ intento.get_resultado_revision_display }}
+                {% else %}
+                    Pendiente de revisión
+                {% endif %}
+            </dd>
+
+            <dt>Revisado por</dt>
+            <dd>
+                {% if intento.revisado_por %}
+                    {{ intento.revisado_por }}
+                {% else %}
+                    Sin revisión
+                {% endif %}
+            </dd>
+
+            <dt>Fecha de revisión</dt>
+            <dd>
+                {% if intento.fecha_revision %}
+                    {{ intento.fecha_revision|date:"d/m/Y H:i:s" }}
+                {% else %}
+                    Sin registro
+                {% endif %}
+            </dd>
+
+            <dt>Observaciones de revisión</dt>
+            <dd>
+                {{ intento.observaciones_revision|default:"Sin observaciones" }}
+            </dd>
+
+        </dl>
+    </div>
+
+    {% if puede_revisar %}
+        <div class="detalle" style="margin-top: 20px;">
+            <h3>Registrar revisión administrativa</h3>
+
+            <form method="post">
+                {% csrf_token %}
+
+                {{ formulario.non_field_errors }}
+
+                <p>
+                    {{ formulario.resultado.label_tag }}
+                    {{ formulario.resultado }}
+                    {{ formulario.resultado.errors }}
+                </p>
+
+                <p>
+                    {{ formulario.observaciones.label_tag }}
+                    {{ formulario.observaciones }}
+                    {{ formulario.observaciones.errors }}
+                </p>
+
+                <button type="submit">
+                    Registrar revisión
+                </button>
+            </form>
+        </div>
+    {% endif %}
+
+    <p>
+        <a href="{% url 'web:entregas_pendientes_revision' %}">
+            Volver a entregas pendientes
+        </a>
+    </p>
+
+</div>
+</body>
+</html>
